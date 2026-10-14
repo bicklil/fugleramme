@@ -127,6 +127,9 @@ BROWSER = {"Accept": "text/html,application/xhtml+xml"}
         ("/collage.png", "image/png"),
         ("/preview.png", "image/png"),
         ("/state", "application/json"),
+        ("/birds", "application/json"),
+        ("/bird?name=Turdus+merula", "text/html; charset=utf-8"),
+        ("/art?name=Turdus+merula", "image/png"),
         ("/species", "application/json"),
         ("/update", "application/json"),
         ("/health", "text/plain"),
@@ -418,6 +421,9 @@ def test_every_route_is_either_the_kiosk_or_behind_the_password(tmp_path, source
         "/state",
         "/paper.png",
         "/health",
+        "/birds",
+        "/bird",
+        "/art",
     }
 
 
@@ -769,3 +775,26 @@ def test_a_signed_out_post_saves_nothing(locked, tmp_path):
 
     _post(locked + "/admin", {"mode": "latest"}, _signed_in(locked))
     assert SettingsStore(tmp_path / SETTINGS).get().mode == "latest"
+
+
+def test_every_bird_on_the_page_is_boxed_inside_it(frame):
+    _status, _headers, body = _fetch(frame + "/birds")
+    birds = json.loads(body)["birds"]
+    assert {b["name"] for b in birds} <= {"Turdus merula", "Parus major"}
+    assert birds
+    for bird in birds:
+        x0, y0, x1, y1 = bird["box"]
+        assert 0 <= x0 < x1 <= 1 and 0 <= y0 < y1 <= 1
+
+
+def test_a_bird_page_names_the_bird(frame):
+    _status, _headers, body = _fetch(frame + "/bird?name=Turdus+merula")
+    assert b"<h1>Turdus merula</h1>" in body
+    assert b"/art?name=Turdus+merula" in body
+
+
+@pytest.mark.parametrize("name", ["Pica pica", "../../etc/passwd", ""])
+def test_a_bird_the_style_cannot_draw_has_no_page(frame, name):
+    query = urllib.parse.urlencode({"name": name})
+    assert _fetch(f"{frame}/bird?{query}")[0] == 404
+    assert _fetch(f"{frame}/art?{query}")[0] == 404

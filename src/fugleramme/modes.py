@@ -394,20 +394,45 @@ def subjects(ctx: Context) -> list[str]:
     return mode_of(ctx.mode).subjects(ctx)
 
 
-_cache: tuple[tuple, bytes] | None = None
+# A bird on the page and the box it covers, as fractions of the page's size.
+Hit = tuple[str, tuple[float, float, float, float]]
+
+_cache: tuple[tuple, bytes, tuple[Hit, ...]] | None = None
 _cache_lock = threading.Lock()
 
 
-def png_bytes(ctx: Context) -> bytes:
-    """The current page as PNG, for the HTTP endpoints. The lock is held across
+def _hits(ctx: Context, page: Image.Image) -> tuple[Hit, ...]:
+    """Where each bird is on `page`. A plate is all one bird."""
+    if not mode_of(ctx.mode).windowed:
+        return tuple((name, (0.0, 0.0, 1.0, 1.0)) for name in subjects(ctx))
+    w, h = page.size
+    return tuple(
+        (name, (x0 / w, y0 / h, x1 / w, y1 / h))
+        for name, (x0, y0, x1, y1) in page.info.get("birds", ())
+    )
+
+
+def _page(ctx: Context) -> tuple[bytes, tuple[Hit, ...]]:
+    """The current page as PNG, and where its birds are. The lock is held across
     the render so concurrent kiosk requests wait for one render instead of each
     doing their own."""
     global _cache
     with _cache_lock:
         key = state_key(ctx)
         if _cache is not None and _cache[0] == key:
-            return _cache[1]
+            return _cache[1], _cache[2]
+        page = render(ctx)
         buffer = io.BytesIO()
-        render(ctx).save(buffer, format="PNG")
-        _cache = (key, buffer.getvalue())
-        return _cache[1]
+        page.save(buffer, format="PNG")
+        _cache = (key, buffer.getvalue(), _hits(ctx, page))
+        return _cache[1], _cache[2]
+
+
+def png_bytes(ctx: Context) -> bytes:
+    """The current page as PNG, for the HTTP endpoints."""
+    return _page(ctx)[0]
+
+
+def birds(ctx: Context) -> tuple[Hit, ...]:
+    """The birds on the page `png_bytes` serves, for the kiosk to make clickable."""
+    return _page(ctx)[1]

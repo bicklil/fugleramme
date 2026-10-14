@@ -46,7 +46,27 @@
   };
   const calm = matchMedia("(prefers-reduced-motion: reduce)");
   // Hidden until it loads, so the first page fades in like an update.
+  // Each bird links to its own page. Boxes overlap where birds nestle, so a
+  // click takes the bird whose centre is nearest.
+  let birds = [];
+  const loadBirds = async () => {
+    try { birds = (await (await fetch("/birds", {cache: "no-store"})).json()).birds; }
+    catch (e) {}  // keep the last ones: the server holds this page through an outage
+  };
+  const birdAt = (event) => {
+    const box = collage.getBoundingClientRect();
+    const x = (event.clientX - box.left) / box.width, y = (event.clientY - box.top) / box.height;
+    const near = ({box: [x0, y0, x1, y1]}) => Math.hypot(x - (x0 + x1) / 2, y - (y0 + y1) / 2);
+    const under = birds.filter(({box: [x0, y0, x1, y1]}) => x0 <= x && x <= x1 && y0 <= y && y <= y1);
+    return under.sort((a, b) => near(a) - near(b))[0];
+  };
+  collage.onclick = (event) => {
+    const bird = birdAt(event);
+    if (bird) location.href = "/bird?name=" + encodeURIComponent(bird.name);
+  };
+  collage.onmousemove = (event) => { collage.style.cursor = birdAt(event) ? "pointer" : ""; };
   collage.onload = () => {
+    loadBirds();
     const reveal = collage.hidden && !calm.matches;
     show(true);
     fitPaper();

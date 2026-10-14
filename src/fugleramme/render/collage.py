@@ -537,12 +537,16 @@ def _draw_birds(
         _spotlit(kept, arts, spotlight),
     )
 
+    boxes = []
     for p in placed:
         art = _scaled(arts[p.index], max(1, round(p.dim * scale)), flips[p.index])
         at = _at(p.at, scale, origin)
         corner = (at[0] - PAD, at[1] - PAD)
         proc = process_sprite(art, corner, textured=textured)
         canvas.paste(proc, corner, proc)
+        boxes.append((names[p.index], (*at, at[0] + art.width, at[1] + art.height)))
+    # Where each bird landed, in output pixels: the kiosk links them (`modes.birds`).
+    canvas.info["birds"] = tuple(boxes)
     return placed, used_px
 
 
