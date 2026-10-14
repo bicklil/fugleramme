@@ -31,8 +31,8 @@ network. This will work on any Raspberry pi os and installation method.
 
 Click or tap a bird to open its own page: its names, its plate, and the
 start of its Wikipedia article, in the frame's first language when Wikipedia
-has one and in English otherwise. The description needs the device to reach
-Wikipedia. The page goes back to the birds by itself after five minutes, so a
+has one and in English otherwise, with a link to its eBird page for photos,
+songs and a map. Both need the device to reach the internet. The page goes back to the birds by itself after five minutes, so a
 stray tap on a wall-mounted screen does not leave it there.
 
 ## On HDMI, Raspberry Pi OS Desktop

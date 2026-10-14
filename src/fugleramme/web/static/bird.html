@@ -14,6 +14,7 @@
   .also, .sci { margin: 0; color: #5d5b55; }
   .sci { font-style: italic; }
   #about { margin-top: 1.5rem; }
+  #more { margin-top: 1rem; font: 0.95rem system-ui, sans-serif; }
   small { display: block; margin-top: 2rem; font: 0.85rem/1.5 system-ui, sans-serif; color: #8a8880; }
 </style>
 </head>
@@ -24,6 +25,7 @@
 $also
 $sci
 <div id="about"></div>
+<p id="more" hidden><a id="ebird" target="_blank" rel="noopener">Photos, songs and map on eBird</a></p>
 <small>Plate: $plate<span id="credit"></span></small>
 <script id="cfg" type="application/json">$data</script>
 <script>
@@ -46,6 +48,16 @@ $sci
     const page = await answer.json();
     return page.type === "standard" ? page : null;
   };
+  // eBird's pages go by its own species code, which Wikidata keeps beside the
+  // scientific name (P225 taxon name, P3444 eBird taxon ID).
+  (async () => {
+    const query = `SELECT ?code WHERE { ?taxon wdt:P225 $${JSON.stringify(cfg.scientific)}; wdt:P3444 ?code } LIMIT 1`;
+    const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(query);
+    const rows = (await (await fetch(url)).json()).results.bindings;
+    if (!rows.length) return;
+    document.getElementById("ebird").href = "https://ebird.org/species/" + encodeURIComponent(rows[0].code.value);
+    document.getElementById("more").hidden = false;
+  })().catch(() => {});
   (async () => {
     let page = null;
     for (const wiki of new Set([cfg.wiki, "en"])) {
