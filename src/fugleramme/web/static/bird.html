@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$name - Fugleramme</title>
+<style>
+  html { background: #f2ede2 url(/paper.png); }
+  body { margin: 0 auto; max-width: 40rem; padding: 1.5rem 1rem 3rem; font: 1.1rem/1.6 Georgia, serif; color: #2b2a26; }
+  a { color: inherit; }
+  nav { font: 0.9rem system-ui, sans-serif; color: #8a8880; }
+  img { display: block; max-width: 100%; max-height: 60vh; margin: 1.5rem auto; }
+  h1 { margin: 0; font-weight: normal; }
+  .also, .sci { margin: 0; color: #5d5b55; }
+  .sci { font-style: italic; }
+  #about { margin-top: 1.5rem; }
+  #more { margin-top: 1rem; font: 0.95rem system-ui, sans-serif; }
+  small { display: block; margin-top: 2rem; font: 0.85rem/1.5 system-ui, sans-serif; color: #8a8880; }
+</style>
+</head>
+<body>
+<nav><a href="/">Back to the birds</a></nav>
+<img src="$art" alt="">
+<h1>$name</h1>
+$also
+$sci
+<div id="about"></div>
+<p id="more" hidden><a id="ebird" target="_blank" rel="noopener">Photos, songs and map on eBird</a></p>
+<small>Plate: $plate<span id="credit"></span></small>
+<script id="cfg" type="application/json">$data</script>
+<script>
+  // A wall-mounted screen has no one to press Back after a stray tap.
+  const IDLE = 5 * 60 * 1000;
+  let idle = setTimeout(() => location.assign("/"), IDLE);
+  for (const kind of ["pointerdown", "scroll", "keydown"]) {
+    addEventListener(kind, () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => location.assign("/"), IDLE);
+    });
+  }
+  const cfg = JSON.parse(document.getElementById("cfg").textContent);
+  const about = document.getElementById("about");
+  // Wikipedia answers a scientific name by redirecting to the species' article.
+  const summary = async (wiki) => {
+    const title = encodeURIComponent(cfg.scientific.replaceAll(" ", "_"));
+    const answer = await fetch(`https://$${wiki}.wikipedia.org/api/rest_v1/page/summary/$${title}`);
+    if (!answer.ok) return null;
+    const page = await answer.json();
+    return page.type === "standard" ? page : null;
+  };
+  // eBird's pages go by its own species code, which Wikidata keeps beside the
+  // scientific name (P225 taxon name, P3444 eBird taxon ID).
+  (async () => {
+    const query = `SELECT ?code WHERE { ?taxon wdt:P225 $${JSON.stringify(cfg.scientific)}; wdt:P3444 ?code } LIMIT 1`;
+    const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(query);
+    const rows = (await (await fetch(url)).json()).results.bindings;
+    if (!rows.length) return;
+    document.getElementById("ebird").href = "https://ebird.org/species/" + encodeURIComponent(rows[0].code.value);
+    document.getElementById("more").hidden = false;
+  })().catch(() => {});
+  (async () => {
+    let page = null;
+    for (const wiki of new Set([cfg.wiki, "en"])) {
+      page = await summary(wiki).catch(() => null);
+      if (page) break;
+    }
+    if (!page) {
+      about.textContent = "No description found.";
+      return;
+    }
+    const text = document.createElement("p");
+    text.textContent = page.extract;
+    about.append(text);
+    const link = document.createElement("a");
+    link.href = page.content_urls.desktop.page;
+    link.textContent = "Wikipedia";
+    link.target = "_blank";
+    link.rel = "noopener";
+    document.getElementById("credit").append(" · Text: ", link, " (CC BY-SA)");
+  })();
+</script>
+</body>
+</html>

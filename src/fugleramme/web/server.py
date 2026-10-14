@@ -3,7 +3,8 @@
 The kiosk (`/`) serves one thing: a full-color page of what the frame is
 showing, full-screen. It never reloads; instead it polls `/state` and swaps the
 image only when the page actually changed, so a new bird appears within one poll
-interval with no flash. Presentation settings live at `/admin` and are read per
+interval with no flash. Each bird on it links to `/bird`, its own page (bird.py),
+through the boxes `/birds` gives for the page last served. Presentation settings live at `/admin` and are read per
 request from the shared SettingsStore, so a change takes effect without a
 restart. The kiosk is open to the LAN; so is the admin until the switch is on
 with a password behind it (#52).
@@ -41,13 +42,14 @@ from urllib.parse import parse_qs, urlparse
 
 from .. import __version__, e6, modes, updates
 from ..languages import namer
+from ..names import drawable_keys, image_for, normalize, resolve, source_of
 from ..panel import Panel, resolution_of
 from ..picks import Picks
 from ..render.paper import paper_tile
 from ..settings import Settings, SettingsStore, merged
 from ..source import Source, Unavailable
 from ..status import Frame, Status
-from . import LOGIN, LOGOUT, STATIC_DIR, admin
+from . import LOGIN, LOGOUT, STATIC_DIR, admin, bird
 
 log = logging.getLogger(__name__)
 
@@ -370,6 +372,44 @@ def make_handler(
             token = modes.token(modes.state_key(self._context(store.get())))
             self._send(200, json.dumps({"token": token}).encode(), JSON)
 
+        def _birds(self):
+            hits = modes.birds(self._context(store.get()))
+            body = {"birds": [{"name": name, "box": box} for name, box in hits]}
+            self._send(200, json.dumps(body).encode(), JSON)
+
+        def _drawn(self) -> tuple[str, str, Path] | None:
+            """The `name` asked for, the style, and the artwork the bird wears in
+            it - None for a name the style cannot draw."""
+            name = self._query().get("name", [""])[0]
+            style = resolve(store.get().style, images_dir)
+            if normalize(name) not in drawable_keys(images_dir, style):
+                return None
+            art = image_for(name, images_dir, style, picks)
+            return (name, style, art) if art else None
+
+        def _bird(self):
+            drawn = self._drawn()
+            if drawn is None:
+                self._send(404, b"not found", "text/plain")
+                return
+            name, style, art = drawn
+            settings = store.get()
+            html = bird.page(
+                name,
+                art,
+                namer(settings.primary_language, settings.secondary_language, store.path.parent),
+                admin.display_name(source_of(art) or style),
+            )
+            self._send(200, html.encode(), HTML)
+
+        def _art(self):
+            drawn = self._drawn()
+            if drawn is None:
+                self._send(404, b"not found", "text/plain")
+                return
+            art = drawn[2]
+            self._send_cached(art.read_bytes(), "image/" + art.suffix.removeprefix("."))
+
         def _species(self):
             ctx = self._context(self._edited())
             rows = admin.subjects(ctx)
@@ -418,6 +458,9 @@ def make_handler(
             "/frame.e6": _e6,
             "/preview.png": _preview_png,
             "/state": _state,
+            "/birds": _birds,
+            "/bird": _bird,
+            "/art": _art,
             "/paper.png": _paper,
             "/species": _species,
             "/admin": _admin,

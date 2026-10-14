@@ -149,7 +149,7 @@ def missing_row(rows: list[tuple[str, int]]) -> str:
     )
 
 
-def _display_name(name: str) -> str:
+def display_name(name: str) -> str:
     return _NAMES.get(name, name.replace("-", " ").title())
 
 
@@ -257,7 +257,7 @@ def _species_li(scientific: str, label: str, source: str | None, url: str) -> st
     name = f'<a data-species="{html.escape(scientific)}" target="_blank" rel="noopener">{label}</a>'
     if source is None:
         return f'<li class="noart">{name} <small>no art</small></li>'
-    plate = _display_name(source)
+    plate = display_name(source)
     if url:
         plate = f'<a href="{html.escape(url)}" target="_blank" rel="noopener">{plate}</a>'
     return f"<li>{name} <small>{plate}</small></li>"
@@ -819,7 +819,7 @@ def page(
         style_field=_radio_field(
             "Artwork style",
             "style",
-            [(s, _display_name(s)) for s in available_styles(ctx.images_dir)],
+            [(s, display_name(s)) for s in available_styles(ctx.images_dir)],
             ctx.style,
         ),
         species_count=len(rows) if rows is not None else 0,

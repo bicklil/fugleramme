@@ -25,3 +25,12 @@ Covers the `web/` package.
 - The margin's edge sliders are named for the glass (`margin_top` is the top at rotation 0), and `admin.js` relabels and reorders them by the rotation in the form, so they always read as the frame hangs.
 - While the margin is dragged, the `.mat` band over the preview stands in for the render and goes when one starts. It is not shown while the preview is loading: there is no page to shade.
 - The admin is used from a remote browser against a headless Pi. Do not design flows around `file://` URLs, opening a browser on the server, or other local-GUI assumptions.
+
+## A bird links to its own page (`bird.py`)
+
+- `/birds` is where each bird landed on the page `/collage.png` serves, as fractions of the page, read off the same render (`modes.birds`, recorded by `collage._draw_birds` on the image's `info`). The kiosk asks for them on every image load. A plate page is one box over the whole page.
+- The boxes are the plates' rectangles, which overlap where birds nestle, so the kiosk takes the containing box whose centre is nearest the click rather than the silhouette.
+- `/bird` and `/art` answer only names the active style can draw, so a query string cannot reach a file outside the artwork.
+- The description is Wikipedia's page summary, fetched by the browser: the frame keeps no text about a species and does not call out for one. The primary language picks the edition (`bird.wiki_language`), English when it is the scientific name or the article is missing.
+- The eBird link needs eBird's species code, which the page asks Wikidata for by scientific name (P225 to P3444), also from the browser. BirdNET-Go's summary carries the code too, but only where its model has one, and the fake has none.
+- The bird page returns to `/` after five idle minutes: an HDMI kiosk has no one to press Back.
