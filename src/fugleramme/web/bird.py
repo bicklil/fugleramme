@@ -9,10 +9,14 @@ quiet LAN might not be.
 from __future__ import annotations
 
 import html
+import io
 import json
+import re
 from pathlib import Path
 from string import Template
 from urllib.parse import quote_plus
+
+import segno
 
 from ..languages import NONE, SCIENTIFIC, STATION, Namer, station_locale
 from ..names import origin_of
@@ -48,3 +52,18 @@ def page(scientific: str, art: Path, namer: Namer, plate_name: str) -> str:
         # `</` cannot close the script it sits in.
         data=json.dumps(data).replace("</", "<\\/"),
     )
+
+
+_EBIRD_CODE = re.compile(r"[a-z0-9]{1,16}")
+
+
+def ebird_qr(code: str) -> bytes | None:
+    """A QR code to the eBird page for species `code`, as SVG, or None for a
+    string that is not an eBird code - the route must not encode any URL asked of it."""
+    if not _EBIRD_CODE.fullmatch(code):
+        return None
+    out = io.BytesIO()
+    segno.make(f"https://ebird.org/species/{code}").save(
+        out, kind="svg", scale=4, border=2, dark="#2b2a26", light=None
+    )
+    return out.getvalue()
