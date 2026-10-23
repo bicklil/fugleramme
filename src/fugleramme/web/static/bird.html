@@ -14,7 +14,9 @@
   .also, .sci { margin: 0; color: #5d5b55; }
   .sci { font-style: italic; }
   #about { margin-top: 1.5rem; }
-  #more { margin-top: 1rem; font: 0.95rem system-ui, sans-serif; }
+  #more { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; font: 0.95rem/1.5 system-ui, sans-serif; }
+  #more[hidden] { display: none; }
+  #more img { width: 7rem; margin: 0; }
   small { display: block; margin-top: 2rem; font: 0.85rem/1.5 system-ui, sans-serif; color: #8a8880; }
 </style>
 </head>
@@ -25,7 +27,8 @@
 $also
 $sci
 <div id="about"></div>
-<p id="more" hidden><a id="ebird" target="_blank" rel="noopener">Photos, songs and map on eBird</a></p>
+<!-- A QR code, not just a link: a kiosk screen has no Back button to return from eBird. -->
+<div id="more" hidden><img id="qr" alt=""><p>Scan for photos, songs and a map on eBird<br><a id="ebird" target="_blank" rel="noopener">or open it here</a></p></div>
 <small>Plate: $plate<span id="credit"></span></small>
 <script id="cfg" type="application/json">$data</script>
 <script>
@@ -55,7 +58,9 @@ $sci
     const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(query);
     const rows = (await (await fetch(url)).json()).results.bindings;
     if (!rows.length) return;
-    document.getElementById("ebird").href = "https://ebird.org/species/" + encodeURIComponent(rows[0].code.value);
+    const code = encodeURIComponent(rows[0].code.value);
+    document.getElementById("ebird").href = "https://ebird.org/species/" + code;
+    document.getElementById("qr").src = "/ebird.svg?code=" + code;
     document.getElementById("more").hidden = false;
   })().catch(() => {});
   (async () => {

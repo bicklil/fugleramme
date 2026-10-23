@@ -33,4 +33,5 @@ Covers the `web/` package.
 - `/bird` and `/art` answer only names the active style can draw, so a query string cannot reach a file outside the artwork.
 - The description is Wikipedia's page summary, fetched by the browser: the frame keeps no text about a species and does not call out for one. The primary language picks the edition (`bird.wiki_language`), English when it is the scientific name or the article is missing.
 - The eBird link needs eBird's species code, which the page asks Wikidata for by scientific name (P225 to P3444), also from the browser. BirdNET-Go's summary carries the code too, but only where its model has one, and the fake has none.
+- eBird is a QR code (`/ebird.svg`, drawn by `segno`) as well as a link: an HDMI kiosk opening eBird would have no way back. The route encodes only a string shaped like an eBird code, never a URL it is handed.
 - The bird page returns to `/` after five idle minutes: an HDMI kiosk has no one to press Back.

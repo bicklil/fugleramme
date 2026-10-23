@@ -13,6 +13,8 @@ dependencies = [
     "fonttools>=4.60",
     "numpy>=2.4.6",
     "pillow>=10.0",
+    # The QR code to a bird's eBird page: a kiosk screen has no way back from a link.
+    "segno>=1.6",
 ]
 
 [project.scripts]

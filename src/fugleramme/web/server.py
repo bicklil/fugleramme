@@ -410,6 +410,13 @@ def make_handler(
             art = drawn[2]
             self._send_cached(art.read_bytes(), "image/" + art.suffix.removeprefix("."))
 
+        def _ebird_qr(self):
+            svg = bird.ebird_qr(self._query().get("code", [""])[0])
+            if svg is None:
+                self._send(404, b"not found", "text/plain")
+                return
+            self._send_cached(svg, "image/svg+xml")
+
         def _species(self):
             ctx = self._context(self._edited())
             rows = admin.subjects(ctx)
@@ -461,6 +468,7 @@ def make_handler(
             "/birds": _birds,
             "/bird": _bird,
             "/art": _art,
+            "/ebird.svg": _ebird_qr,
             "/paper.png": _paper,
             "/species": _species,
             "/admin": _admin,

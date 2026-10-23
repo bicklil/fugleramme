@@ -130,6 +130,7 @@ BROWSER = {"Accept": "text/html,application/xhtml+xml"}
         ("/birds", "application/json"),
         ("/bird?name=Turdus+merula", "text/html; charset=utf-8"),
         ("/art?name=Turdus+merula", "image/png"),
+        ("/ebird.svg?code=eurbla", "image/svg+xml"),
         ("/species", "application/json"),
         ("/update", "application/json"),
         ("/health", "text/plain"),
@@ -424,6 +425,7 @@ def test_every_route_is_either_the_kiosk_or_behind_the_password(tmp_path, source
         "/birds",
         "/bird",
         "/art",
+        "/ebird.svg",
     }
 
 
@@ -798,3 +800,9 @@ def test_a_bird_the_style_cannot_draw_has_no_page(frame, name):
     query = urllib.parse.urlencode({"name": name})
     assert _fetch(f"{frame}/bird?{query}")[0] == 404
     assert _fetch(f"{frame}/art?{query}")[0] == 404
+
+
+@pytest.mark.parametrize("code", ["", "https://example.com", "eur bla", "x" * 17])
+def test_the_ebird_qr_code_encodes_nothing_but_an_ebird_code(frame, code):
+    query = urllib.parse.urlencode({"code": code})
+    assert _fetch(f"{frame}/ebird.svg?{query}")[0] == 404
